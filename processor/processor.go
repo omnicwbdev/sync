@@ -227,6 +227,14 @@ func ProcessRows(firebirdDB, mysqlDB *sql.DB, updateStmt, insertStmt *sql.Stmt, 
 		log.Error().Err(err).Msg("Error calling UpdateQtdVirtual procedure")
 		return fmt.Errorf("error calling UpdateQtdVirtual procedure: %w", err)
 	}
+
+	// split PartNumber from description to a stand olone field
+	_, err = mysqlDB.Exec("CALL SP_ATUALIZAR_PART_NUMBER()")
+	if err != nil {
+		log.Error().Err(err).Msg("Error calling SP_ATUALIZAR_PART_NUMBER procedure")
+		return fmt.Errorf("error calling SP_ATUALIZAR_PART_NUMBER procedure: %w", err)
+	}
+
 	stats.ProcedureTime = time.Since(startProc)
 
 	log.Debug().Msg("UpdateQtdVirtual procedure executed successfully")
@@ -241,7 +249,8 @@ func processRowBuffer(rowBuffer *[]struct {
 	qtdAtual  float64
 	prcCusto  sql.NullFloat64
 	prcDolar  sql.NullFloat64
-}, count int, existingRecords map[int]mysqlRecord, batchInsert, batchUpdate *[]interface{}, mu *sync.Mutex, insertedCount, updatedCount, ignoredCount *int, wg *sync.WaitGroup, semaphore chan struct{}, cfg config.Config) {
+}, count int, existingRecords map[int]mysqlRecord, batchInsert, batchUpdate *[]interface{}, mu *sync.Mutex, insertedCount, updatedCount, ignoredCount *int, wg *sync.WaitGroup, semaphore chan struct{}, cfg config.Config,
+) {
 	log := logger.GetLogger()
 
 	for i := 0; i < count; i++ {
